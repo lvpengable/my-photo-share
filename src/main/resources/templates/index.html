@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>照片分享网站</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>📸 照片分享</h1>
+        <p>上传和分享你的美好瞬间</p>
+    </header>
+
+    <!-- 上传表单 -->
+    <div class="upload-section">
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="upload-area">
+                <input type="file" id="photoInput" name="photo" accept="image/*" required>
+                <label for="photoInput" class="upload-label">
+                    <span>📷 选择照片</span>
+                </label>
+                <textarea id="description" name="description" placeholder="添加描述（可选）..." rows="3"></textarea>
+                <button type="submit" class="upload-btn">上传照片</button>
+            </div>
+        </form>
+        <div id="uploadMessage" class="message"></div>
+    </div>
+
+    <!-- 照片列表 -->
+    <div class="photos-section">
+        <h2>🖼️ 所有照片</h2>
+        <div id="photosContainer" class="photos-grid">
+            <!-- 照片将通过JavaScript动态加载 -->
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/script.js}"></script>
+</body>
+</html>
