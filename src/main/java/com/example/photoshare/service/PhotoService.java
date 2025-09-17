@@ -1,5 +1,6 @@
 package com.example.photoshare.service;
 
+import com.example.photoshare.constant.PhotoCompressConstant;
 import com.example.photoshare.domain.Photo;
 import com.example.photoshare.repository.PhotoRepository;
 import net.coobird.thumbnailator.Thumbnails;
@@ -59,25 +60,25 @@ public class PhotoService {
         file.transferTo(tempInputFile);
 
         // 4. 使用 Thumbnailator 压缩图片（生成压缩后的 JPG）
-        String compressedJpgFilename = "compressed_" + filename.replace(extension, ".jpg");
+        String compressedJpgFilename = PhotoCompressConstant.COMPRESSED + filename.replace(extension, PhotoCompressConstant.JPG);
         Path compressedJpgPath = Paths.get(uploadDir, compressedJpgFilename);
         File compressedJpgFile = compressedJpgPath.toFile();
         Thumbnails.of(tempInputFile) // ← 重点：这里的 input 是 tempInputFile（File 类型）
                 .size(1024, 1024)  // 限制最大宽高
-                .outputQuality(0.7)  // 压缩质量 70%
+                .outputQuality(0.3)  // 压缩质量 70%
                 .outputFormat("jpg") // 输出 JPG
                 .toFile(compressedJpgFile);
 
-        // 5. 调用 cwebp，将压缩后的 JPG 转为 WebP
-        String webpFilename = "compressed_" + filename.replace(extension, ".webp");
-        Path webpPath = Paths.get(uploadDir, webpFilename);
-        File webpFile = webpPath.toFile();
+//        // 5. 调用 cwebp，将压缩后的 JPG 转为 WebP
+//        String webpFilename = "compressed_" + filename.replace(extension, ".webp");
+//        Path webpPath = Paths.get(uploadDir, webpFilename);
+//        File webpFile = webpPath.toFile();
 
         // 调用你的工具方法，传入压缩后的 JPG 路径 和 WebP 输出路径
         // 读取 PNG
-        BufferedImage image = ImageIO.read(compressedJpgFile);
+//        BufferedImage image = ImageIO.read(compressedJpgFile);
         // 写入 WebP
-        ImageIO.write(image, "webp", webpFile);
+//        ImageIO.write(image, "webp", webpFile);
 
         // 6. （可选）删除临时文件
         tempInputFile.delete();

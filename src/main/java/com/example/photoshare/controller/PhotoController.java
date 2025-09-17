@@ -1,5 +1,6 @@
 package com.example.photoshare.controller;
 
+import com.example.photoshare.constant.PhotoCompressConstant;
 import com.example.photoshare.domain.Photo;
 import com.example.photoshare.service.PhotoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,7 +90,10 @@ public class PhotoController {
         Photo photo = photoService.getPhotoById(photoId);
         if (photo != null) {
             try {
-                Path filePath = Paths.get("uploads/" + photo.getFilename());
+                String fileNameDB = photo.getFilename();
+                String newFilename = fileNameDB.substring(0, fileNameDB.lastIndexOf(PhotoCompressConstant.DOT)) + PhotoCompressConstant.JPG;
+
+                Path filePath = Paths.get("uploads/" + PhotoCompressConstant.COMPRESSED + newFilename);
                 Resource resource = new UrlResource(filePath.toUri());
                 
                 if (resource.exists() && resource.isReadable()) {
