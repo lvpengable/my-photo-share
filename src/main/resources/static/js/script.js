@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const photosHtml = photos.map(photo => `
             <div class="photo-card">
-                <img src="/photos/${photo.id}/image" alt="${photo.originalName}" class="photo-image" onclick="openModal('/photos/${photo.id}/image', '${photo.originalName}')">
+                <img src="/static/photos/${photo.id}" alt="${photo.originalName}" class="photo-image" onclick="openModal('/static/photos/${photo.id}', '${photo.originalName}')">
                 <div class="photo-info">
                     <div class="photo-description">${photo.description || '暂无描述'}</div>
                     <div class="photo-meta">

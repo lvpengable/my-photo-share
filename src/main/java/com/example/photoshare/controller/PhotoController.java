@@ -85,7 +85,7 @@ public class PhotoController {
         }
     }
 
-    @GetMapping("/photos/{photoId}/image")
+    @GetMapping("/static/photos/{photoId}")
     public ResponseEntity<Resource> getImage(@PathVariable String photoId) {
         Photo photo = photoService.getPhotoById(photoId);
         if (photo != null) {
