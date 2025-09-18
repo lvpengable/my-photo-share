@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.openModal = function(imageSrc, imageName) {
         const modal = document.createElement('div');
         modal.className = 'modal';
+        modal.style.display = 'block'; // 覆盖CSS中的display: none;
         modal.onclick = function() {
             document.body.removeChild(modal);
         };
