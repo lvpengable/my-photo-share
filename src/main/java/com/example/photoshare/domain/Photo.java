@@ -31,7 +31,7 @@ public class Photo {
     
     @ElementCollection
     @CollectionTable(name = "photo_likers", joinColumns = @JoinColumn(name = "photo_id"))
-    @Column(name = "liker_ip")
+    @Column(name = "liker_device_id")
     private List<String> likedBy = new ArrayList<>();
     
     @PrePersist

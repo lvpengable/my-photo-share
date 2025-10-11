@@ -2,6 +2,7 @@ package com.example.photoshare.controller;
 
 import com.example.photoshare.constant.PhotoCompressConstant;
 import com.example.photoshare.domain.Photo;
+import com.example.photoshare.request.LikeRequest;
 import com.example.photoshare.service.PhotoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -73,11 +74,13 @@ public class PhotoController {
 
     @PostMapping("/like/{photoId}")
     @ResponseBody
-    public ResponseEntity<?> likePhoto(@PathVariable String photoId, HttpServletRequest request) {
+    public ResponseEntity<?> likePhoto(@PathVariable String photoId, @RequestBody LikeRequest likeRequest, HttpServletRequest request) {
+
         String ipAddress = getClientIp(request);
-        
-        boolean success = photoService.likePhoto(photoId, ipAddress);
-        
+        String likerDeviceId = likeRequest.getLikerDeviceId();
+        System.out.println("likePhoto=" + ipAddress + " likerDeviceId=" + likerDeviceId);
+        boolean success = photoService.likePhoto(photoId, likerDeviceId);
+
         if (success) {
             return ResponseEntity.ok("{\"success\": true, \"message\": \"点赞成功！\"}");
         } else {

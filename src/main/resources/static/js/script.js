@@ -41,6 +41,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
+    // 获取或生成并保存 deviceId
+    function getOrCreateDeviceId() {
+        let deviceId = localStorage.getItem('photo_share_device_id');
+        if (!deviceId) {
+            // 生成一个随机的 UUID v4（标准设备唯一标识格式）
+            deviceId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+            // 存储到 localStorage，长期保存
+            localStorage.setItem('photo_share_device_id', deviceId);
+        }
+        return deviceId;
+    }
+
+// 在 DOM 加载时获取 deviceId（也可以在全局变量中保存）
+    const currentDeviceId = getOrCreateDeviceId();
+
     // 点赞照片
     window.likePhoto = function(photoId, button) {
         const ipAddress = 'client-ip'; // 在实际应用中，应该从后端获取或传递
@@ -49,7 +68,11 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-            }
+            },
+            body: JSON.stringify({
+                likerDeviceId: currentDeviceId,
+            })
+
         })
             .then(response => response.json())
             .then(data => {
@@ -176,13 +199,160 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="like-count">${photo.likes}</span>
                     </div>
                 </div>
+                <!-- ✅ 新增：评论输入区域 -->
+                <div class="comment-section">
+                    <textarea 
+                        placeholder="写下你的评论..." 
+                        class="comment-input" 
+                        data-photo-id="${photo.id}"
+                        rows="3"
+                        style="
+                            width: 100%;
+                            margin-top: 10px;
+                            padding: 8px;
+                            border: 1px solid #ddd;
+                            border-radius: 5px;
+                            resize: vertical;
+                            font-family: inherit;
+                        "
+                    ></textarea>
+                    <button 
+                        class="comment-submit-btn" 
+                        data-photo-id="${photo.id}"
+                        style="
+                            margin-top: 5px;
+                            padding: 6px 12px;
+                            background: #2196F3;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-size: 0.9rem;
+                        "
+                    >
+                        发表评论
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 在每张照片的 HTML 模板中，添加如下区块（放在评论输入框之前或之后）-->
+            <div class="comments-list" data-photo-id="${photo.id}">
+                <!-- 评论列表将通过 AJAX 加载并插入这里 -->
             </div>
         `).join('');
 
+        // ✅ 第一步：先把照片卡片插入 DOM
         photosContainer.innerHTML = photosHtml;
+
+        // ✅ 第二步：遍历每张照片，加载评论并渲染到对应容器中
+        photos.forEach(function(photo) {
+            const photoId = photo.id;
+
+            fetch(`/api/comments?photoId=${photoId}`)
+                .then(response => response.json())
+                .then(res => {
+                    if (res.success) {
+                        const comments = res.comments;
+                        const commentsContainer = document.querySelector(`.comments-list[data-photo-id="${photoId}"]`);
+
+                        if (comments && comments.length > 0) {
+                            let commentsHtml = '';
+                            for (let i = 0; i < comments.length; i++) {
+                                const c = comments[i];
+                                commentsHtml += `
+                                <div style="margin-bottom: 10px; padding: 8px; background: #f0f0f0; border-radius: 5px; font-size: 0.9rem;">
+                                    <strong>${c.commenterName || '匿名用户'}:</strong><br>
+                                    ${c.commentText}<br>
+                                    <small style="color: #888;">${new Date(c.createdAt).toLocaleString()}</small>
+                                </div>
+                            `;
+                            }
+                            commentsContainer.innerHTML = commentsHtml;
+                        } else {
+                            commentsContainer.innerHTML = '<p style="font-size: 0.9rem; color: #888;">暂无评论，快来抢沙发吧！</p>';
+                        }
+                    } else {
+                        console.error('获取评论失败:', res.message);
+                        commentsContainer.innerHTML = '<p style="font-size: 0.9rem; color: #888;">暂无评论</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('加载评论出错:', error);
+                    // 可以留空或显示错误提示
+                });
+        });
     }
 
+    // ✅ 使用事件委托绑定 .comment-submit-btn 的点击（动态生效！）
+    photosContainer.addEventListener('click', function (e) {
+        if (e.target.classList.contains('comment-submit-btn')) {
+            const btn = e.target;
+            const photoId = btn.getAttribute('data-photo-id');
+            const textarea = document.querySelector('.comment-input[data-photo-id="' + photoId + '"]');
+            const commentText = textarea.value.trim();
 
+            if (!commentText) {
+                alert('请输入评论内容');
+                return;
+            }
+
+            // 提交评论到后端
+            fetch('/api/comments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    photoId: photoId,
+                    commenterId: currentDeviceId,
+                    commenterName: '用户',
+                    commentText: commentText
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('评论发表成功！');
+                        textarea.value = ''; // 清空输入框
+
+                        // ✅ 成功后加载该照片的评论列表
+                        fetch('/api/comments?photoId=' + photoId)
+                            .then(function (response) {
+                                return response.json();
+                            })
+                            .then(function (res) {
+                                if (res.success) {
+                                    var comments = res.comments;
+                                    var commentsContainer = document.querySelector('.comments-list[data-photo-id="' + photoId + '"]');
+                                    if (comments && comments.length > 0) {
+                                        var commentsHtml = '';
+                                        for (var i = 0; i < comments.length; i++) {
+                                            var c = comments[i];
+                                            commentsHtml += '<div style="margin-bottom: 10px; padding: 8px; background: #f0f0f0; border-radius: 5px; font-size: 0.9rem;">' +
+                                                '<strong>' + (c.commenterName || '匿名用户') + ':</strong><br>' +
+                                                c.commentText + '<br>' +
+                                                '<small style="color: #888;">' + new Date(c.createdAt).toLocaleString() + '</small>' +
+                                                '</div>';
+                                        }
+                                        commentsContainer.innerHTML = commentsHtml;
+                                    } else {
+                                        commentsContainer.innerHTML = '<p style="font-size: 0.9rem; color: #888;">暂无评论，快来抢沙发吧！</p>';
+                                    }
+                                }
+                            })
+                            .catch(function (error) {
+                                console.error('加载评论出错:', error);
+                            });
+                    } else {
+                        alert(data.message || '评论发表失败，请重试');
+                    }
+                })
+                .catch(function (error) {
+                    console.error('评论提交出错:', error);
+                    alert('评论发表失败，请重试');
+                });
+        }
+    });
 
     // 显示消息
     function showMessage(message, type) {
