@@ -233,12 +233,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         发表评论
                     </button>
                 </div>
+                <!-- 在每张照片的 HTML 模板中，添加如下区块（放在评论输入框之前或之后）-->
+                <div class="comments-list" data-photo-id="${photo.id}">
+                    <!-- 评论列表将通过 AJAX 加载并插入这里 -->
+                </div>
             </div>
             
-            <!-- 在每张照片的 HTML 模板中，添加如下区块（放在评论输入框之前或之后）-->
-            <div class="comments-list" data-photo-id="${photo.id}">
-                <!-- 评论列表将通过 AJAX 加载并插入这里 -->
-            </div>
         `).join('');
 
         // ✅ 第一步：先把照片卡片插入 DOM

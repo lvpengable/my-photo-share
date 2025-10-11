@@ -9,4 +9,8 @@ import java.util.List;
 @Repository
 public interface PhotoRepository extends JpaRepository<Photo, String> {
     List<Photo> findAllByOrderByUploadTimeDesc();
+
+    // 按点赞数量倒序排序
+    List<Photo> findAllByOrderByLikesDesc();
+
 }

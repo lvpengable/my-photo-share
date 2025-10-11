@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📸 照片排行榜</title>
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* 排行榜容器 */
+        #rankingContainer {
+            display: grid;
+            gap: 20px;
+        }
+
+        /* 排行榜项目卡片 */
+        .ranking-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ranking-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+        }
+
+        .ranking-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        /* 排名数字 */
+        .rank {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin-right: 20px;
+            min-width: 50px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .rank.top3 {
+            font-size: 2.5rem;
+        }
+
+        .rank.top1 {
+            color: #FFD700; /* 金色 */
+        }
+
+        .rank.top2 {
+            color: #C0C0C0; /* 银色 */
+        }
+
+        .rank.top3 {
+            color: #CD7F32; /* 铜色 */
+        }
+
+        /* 缩略图 */
+        .thumbnail {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-right: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .thumbnail:hover {
+            transform: scale(1.05);
+        }
+
+        /* 照片信息 */
+        .photo-info {
+            flex: 1;
+        }
+
+        .photo-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .photo-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
+
+        .photo-meta span {
+            background: #f8f9fa;
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 2rem;
+                margin-bottom: 20px;
+            }
+
+            .ranking-item {
+                flex-direction: column;
+                text-align: center;
+                padding: 15px;
+            }
+
+            .rank {
+                margin-right: 0;
+                margin-bottom: 10px;
+                font-size: 1.8rem;
+            }
+
+            .thumbnail {
+                margin-right: 0;
+                margin-bottom: 15px;
+                width: 100px;
+                height: 100px;
+            }
+
+            .photo-info {
+                width: 100%;
+            }
+
+            .photo-meta {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .thumbnail {
+                width: 80px;
+                height: 80px;
+            }
+
+            .photo-meta {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .photo-meta span {
+                display: inline-block;
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        /* 加载动画 */
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            margin-top: 50px;
+        }
+
+        /* 无数据提示 */
+        .no-data {
+            text-align: center;
+            color: white;
+            font-size: 1.1rem;
+            margin-top: 50px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📸 照片排行榜</h1>
+    <div id="rankingContainer">
+        <div class="loading">正在加载排行榜...</div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchRanking();
+
+        function fetchRanking() {
+            fetch('/api/ranking')
+                .then(response => response.json())
+                .then(photos => {
+                    displayRanking(photos);
+                })
+                .catch(error => {
+                    console.error('Error loading ranking:', error);
+                    document.getElementById('rankingContainer').innerHTML =
+                        '<div class="no-data">加载失败，请刷新重试</div>';
+                });
+        }
+
+        function displayRanking(photos) {
+            const rankingContainer = document.getElementById('rankingContainer');
+
+            if (!photos || photos.length === 0) {
+                rankingContainer.innerHTML = '<div class="no-data">暂无数据</div>';
+                return;
+            }
+
+            const rankingHtml = photos.map((photo, index) => {
+                // 为前三名添加特殊样式类
+                let rankClass = 'rank';
+                if (index === 0) rankClass += ' top1';
+                else if (index === 1) rankClass += ' top2';
+                else if (index === 2) rankClass += ' top3';
+
+                return `
+                        <div class="ranking-item">
+                            <span class="${rankClass}">${index + 1}</span>
+                            <img src="/static/photos/${photo.id}" alt="${photo.originalName}" class="thumbnail"
+                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDAiIGN5PSI0MCIgcj0iNDAiIGZpbGw9IiNmMGYwZjAiLz4KPHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSI0OCIgeT0iNDAiPgo8cGF0aCBkPSJNMjQgMTJMMTIgMjRMMTYgMjRMMjQgMTJaIiBmaWxsPSIjOTk5Ii8+Cjwvc3ZnPgo8L3N2Zz4K'">
+                            <div class="photo-info">
+                                <div class="photo-title">${photo.description || '暂无描述'}</div>
+                                <div class="photo-meta">
+                                    <span>👤 ${photo.likes} 赞</span>
+                                    <span>📅 ${formatDate(photo.uploadTime)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+            }).join('');
+
+            rankingContainer.innerHTML = rankingHtml;
+        }
+
+        // 格式化日期显示
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+    });
+</script>
+</body>
+</html>
