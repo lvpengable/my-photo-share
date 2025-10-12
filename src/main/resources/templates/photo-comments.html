@@ -88,10 +88,16 @@
       border-radius: 6px;
       border-left: 3px solid #2196F3;
     }
+
     .comment-text {
-      margin-bottom: 5px;
-      font-size: 1rem;
+      word-wrap: break-word;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      white-space: normal; /* 默认就是 normal，可省略，但加上更语义化 */
+      line-height: 1.4;    /* 提升阅读体验 */
+      font-size: 1rem;     /* 可选，保持一致字体大小 */
     }
+
     .comment-time {
       font-size: 0.85rem;
       color: #888;

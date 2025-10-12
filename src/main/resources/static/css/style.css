@@ -286,3 +286,21 @@ header p {
 .close:hover {
     color: #bbb;
 }
+
+/* 点赞排行榜按钮样式 */
+.ranking-btn {
+    display: inline-block;
+    margin-bottom: 15px;
+    margin-left: 10px;
+    padding: 8px 16px;
+    background: #1976d2;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.ranking-btn:hover {
+    background: #1565c0;
+}

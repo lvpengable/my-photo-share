@@ -75,7 +75,8 @@ public class PhotoController {
         }
     }
 
-    @PostMapping("/like/{photoId}")
+
+    @PostMapping("/like/cancel/{photoId}")
     @ResponseBody
     public ResponseEntity<?> likePhoto(@PathVariable String photoId, @RequestBody LikeRequest likeRequest, HttpServletRequest request) {
 

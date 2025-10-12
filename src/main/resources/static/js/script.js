@@ -353,14 +353,44 @@ document.addEventListener('DOMContentLoaded', function() {
                                     var commentsContainer = document.querySelector('.comments-list[data-photo-id="' + photoId + '"]');
                                     if (comments && comments.length > 0) {
                                         var commentsHtml = '';
-                                        for (var i = 0; i < comments.length; i++) {
+                                        var showCount = Math.min(comments.length, 3); // 最多显示 3 条
+
+                                        // 只循环渲染前 3 条（或全部，如果 <= 3）
+                                        for (var i = 0; i < showCount; i++) {
                                             var c = comments[i];
                                             commentsHtml += '<div style="margin-bottom: 10px; padding: 8px; background: #f0f0f0; border-radius: 5px; font-size: 0.9rem;">' +
                                                 c.commentText + '<br>' +
                                                 '<small style="color: #888;">' + new Date(c.createdAt).toLocaleString() + '</small>' +
                                                 '</div>';
                                         }
+
+                                        // 获取评论容器
                                         commentsContainer.innerHTML = commentsHtml;
+                                        if (comments && comments.length > 0) {
+                                            // 如果评论总数超过 3 条，显示“查看更多评论”按钮
+                                            if (comments.length > 3) {
+                                                var moreBtn = document.createElement('button');
+                                                moreBtn.innerText = '查看更多评论';
+                                                moreBtn.style.cssText = `
+                                                            margin-top: 10px;
+                                                            padding: 6px 12px;
+                                                            background: #2196F3;
+                                                            color: white;
+                                                            border: none;
+                                                            border-radius: 5px;
+                                                            cursor: pointer;
+                                                            font-size: 0.9rem;
+                                                        `;
+                                                moreBtn.onclick = function () {
+                                                    // 跳转到全部评论页面（参考你的逻辑）
+                                                    window.location.href = '/photo-comments?photoId=' + photoId;
+                                                };
+                                                commentsContainer.appendChild(moreBtn);
+                                            }
+                                        } else {
+                                            // 没有评论
+                                            commentsContainer.innerHTML = '<p style="font-size: 0.9rem; color: #888;">暂无评论，快来抢沙发吧！</p>';
+                                        }
                                     } else {
                                         commentsContainer.innerHTML = '<p style="font-size: 0.9rem; color: #888;">暂无评论，快来抢沙发吧！</p>';
                                     }
