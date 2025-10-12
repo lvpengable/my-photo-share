@@ -2,6 +2,9 @@ package com.example.photoshare.service;
 
 import com.example.photoshare.constant.PhotoCompressConstant;
 import com.example.photoshare.domain.Photo;
+import com.example.photoshare.domain.PhotoComment;
+import com.example.photoshare.dto.CommentDto;
+import com.example.photoshare.repository.PhotoCommentRepository;
 import com.example.photoshare.repository.PhotoRepository;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,15 +19,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class PhotoService {
 
     @Autowired
     private PhotoRepository photoRepository;
+
+    @Autowired
+    private PhotoCommentRepository photoCommentRepository;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
@@ -109,5 +117,23 @@ public class PhotoService {
 
     public Photo getPhotoById(String photoId) {
         return photoRepository.findById(photoId).orElse(null);
+    }
+
+    public List<CommentDto> getCommentsByPhotoId(String photoId) {
+        List<PhotoComment> photoComments = photoCommentRepository.findByPhotoIdOrderByCreatedAtDesc(photoId);
+        return photoComments.stream()
+                .map(comment -> {
+                    // 格式化时间，比如 "yyyy-MM-dd HH:mm:ss"
+                    String formattedTime = comment.getCreatedAt() != null
+                            ? comment.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                            : "未知时间";
+
+                    return new CommentDto(
+                            comment.getCommenterName(),  // 评论者昵称
+                            comment.getCommentText(),    // 评论内容
+                            formattedTime                // 格式化后的时间字符串
+                    );
+                })
+                .collect(Collectors.toList());
     }
 }

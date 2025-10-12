@@ -252,33 +252,60 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(res => {
                     if (res.success) {
-                        const comments = res.comments;
+                        const comments = res.comments || [];
                         const commentsContainer = document.querySelector(`.comments-list[data-photo-id="${photoId}"]`);
 
                         if (comments && comments.length > 0) {
                             let commentsHtml = '';
-                            for (let i = 0; i < comments.length; i++) {
+
+                            // 只显示前 3 条评论
+                            const showCount = Math.min(comments.length, 3);
+                            for (let i = 0; i < showCount; i++) {
                                 const c = comments[i];
                                 commentsHtml += `
-                                <div style="margin-bottom: 10px; padding: 8px; background: #f0f0f0; border-radius: 5px; font-size: 0.9rem;">
-                                    <strong>${c.commenterName || '匿名用户'}:</strong><br>
-                                    ${c.commentText}<br>
-                                    <small style="color: #888;">${new Date(c.createdAt).toLocaleString()}</small>
-                                </div>
-                            `;
+                        <div style="margin-bottom: 10px; padding: 8px; background: #f0f0f0; border-radius: 5px; font-size: 0.9rem;">
+                            ${c.commentText}<br>
+                            <small style="color: #888;">${new Date(c.createdAt).toLocaleString()}</small>
+                        </div>
+                    `;
                             }
+
                             commentsContainer.innerHTML = commentsHtml;
+
+                            // 如果评论总数超过 3 条，显示“查看更多评论”按钮
+                            if (comments.length > 3) {
+                                const moreBtn = document.createElement('button');
+                                moreBtn.innerText = '查看更多评论';
+                                moreBtn.style.cssText = `
+                            margin-top: 10px;
+                            padding: 6px 12px;
+                            background: #2196F3;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-size: 0.9rem;
+                        `;
+                                moreBtn.onclick = function () {
+                                    // 跳转到查看全部评论的页面，并传入 photoId
+                                    window.location.href = `/photo-comments?photoId=${photoId}`;
+                                };
+
+                                commentsContainer.appendChild(moreBtn);
+                            }
                         } else {
                             commentsContainer.innerHTML = '<p style="font-size: 0.9rem; color: #888;">暂无评论，快来抢沙发吧！</p>';
                         }
                     } else {
                         console.error('获取评论失败:', res.message);
+                        const commentsContainer = document.querySelector(`.comments-list[data-photo-id="${photoId}"]`);
                         commentsContainer.innerHTML = '<p style="font-size: 0.9rem; color: #888;">暂无评论</p>';
                     }
                 })
                 .catch(error => {
                     console.error('加载评论出错:', error);
-                    // 可以留空或显示错误提示
+                    const commentsContainer = document.querySelector(`.comments-list[data-photoId="${photoId}"]`);
+                    commentsContainer.innerHTML = '<p style="font-size: 0.9rem; color: #888;">加载评论失败</p>';
                 });
         });
     }
@@ -329,7 +356,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                         for (var i = 0; i < comments.length; i++) {
                                             var c = comments[i];
                                             commentsHtml += '<div style="margin-bottom: 10px; padding: 8px; background: #f0f0f0; border-radius: 5px; font-size: 0.9rem;">' +
-                                                '<strong>' + (c.commenterName || '匿名用户') + ':</strong><br>' +
                                                 c.commentText + '<br>' +
                                                 '<small style="color: #888;">' + new Date(c.createdAt).toLocaleString() + '</small>' +
                                                 '</div>';

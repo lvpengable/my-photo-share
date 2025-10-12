@@ -2,12 +2,15 @@ package com.example.photoshare.controller;
 
 import com.example.photoshare.constant.PhotoCompressConstant;
 import com.example.photoshare.domain.Photo;
+import com.example.photoshare.dto.CommentDto;
 import com.example.photoshare.request.LikeRequest;
+import com.example.photoshare.response.PhotoDetailResponse;
 import com.example.photoshare.service.PhotoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -156,6 +159,31 @@ public class PhotoController {
         });
 
         return ResponseEntity.ok(photos);
+    }
+
+    @GetMapping("/photos/{photoId}")
+    @ResponseBody
+    public ResponseEntity<?> getPhotoDetail(@PathVariable String photoId, HttpServletRequest request) {
+        try {
+            // 1. 查询照片
+            Photo photo = photoService.getPhotoById(photoId);
+
+            // 2. 查询当前用户（IP 或 设备ID）是否点过赞
+            String ipAddress = getClientIp(request);
+            // 如果你是用 like_device_id 来防重复点赞，请传入设备唯一标识而不是 IP
+            boolean likedByUser = photoService.isPhotoLikedByIp(photoId, ipAddress); // 或改成设备ID
+
+            // 3. 查询该照片的评论列表
+            List<CommentDto> comments = photoService.getCommentsByPhotoId(photoId);
+
+            // 4. 组装返回对象
+            PhotoDetailResponse response = new PhotoDetailResponse(photo, likedByUser, comments);
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
 }

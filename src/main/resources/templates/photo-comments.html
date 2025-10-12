@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>照片详情</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 15px;
+      padding: 8px 16px;
+      background: #6c757d;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 0.9rem;
+    }
+    .back-btn:hover {
+      background: #5a6268;
+    }
+    .photo-card {
+      margin-bottom: 20px;
+    }
+    .photo-image {
+      width: 100%;
+      max-height: 400px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .photo-info {
+      margin-top: 15px;
+    }
+    .photo-description {
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+    .photo-meta {
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    .photo-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .like-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .like-btn.liked {
+      background: #ffeb3b;
+      border-color: #ffc107;
+    }
+    .like-count {
+      font-weight: bold;
+    }
+    .comment {
+      margin-bottom: 15px;
+      padding: 12px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      border-left: 3px solid #2196F3;
+    }
+    .comment-text {
+      margin-bottom: 5px;
+      font-size: 1rem;
+    }
+    .comment-time {
+      font-size: 0.85rem;
+      color: #888;
+    }
+    .no-photo, .no-comments {
+      text-align: center;
+      color: #888;
+      font-style: italic;
+      padding: 40px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a href="/" class="back-btn">← 返回首页</a>
+  <h1>📸 照片详情</h1>
+  <div id="loading">加载中...</div>
+  <div id="error" class="no-photo" style="display: none;">加载失败，请刷新重试</div>
+  <div id="photoDetail" style="display: none;">
+    <div class="photo-card">
+      <img id="photoImage" class="photo-image" alt="照片">
+      <div class="photo-info">
+        <div id="photoDescription" class="photo-description"></div>
+        <div id="photoMeta" class="photo-meta"></div>
+        <div class="photo-actions">
+          <button id="likeBtn" class="like-btn">
+            <span>❤️</span>
+            <span>点赞</span>
+          </button>
+          <span id="likeCount" class="like-count">0</span>
+        </div>
+      </div>
+    </div>
+    <h3>💬 评论</h3>
+    <div id="commentsContainer">
+      <div class="no-comments">正在加载评论...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ======================
+  // 工具函数
+  // ======================
+
+  // 从 URL 获取参数
+  function getQueryParam(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+  }
+
+  // 格式化日期时间，如 "2024-06-01T12:00:00" → "2024-06-01 12:00:00"
+  function formatDateTime(dateTimeStr) {
+    if (!dateTimeStr) return '未知时间';
+    try {
+      const date = new Date(dateTimeStr);
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return dateTimeStr; // fallback
+    }
+  }
+
+  // ======================
+  // 渲染函数
+  // ======================
+
+  // 渲染照片信息：图片、描述、上传时间、ID、点赞按钮
+  function renderPhoto(data) {
+    const photo = data.photo;
+
+    const photoImage = document.getElementById('photoImage');
+    const photoDescription = document.getElementById('photoDescription');
+    const photoMeta = document.getElementById('photoMeta');
+    const likeBtn = document.getElementById('likeBtn');
+    const likeCount = document.getElementById('likeCount');
+
+    photoImage.src = `/static/photos/${photo.id}`;
+    photoImage.alt = photo.originalName || '未知图片';
+    photoDescription.textContent = photo.description || '暂无描述';
+    photoMeta.innerHTML = `
+      <span>📅 ${formatDateTime(photo.uploadTime)}</span>
+      <span>🆔 #${photo.id.substring(0, 8)}</span>
+    `;
+
+    // 设置点赞状态和数量
+    likeBtn.classList.toggle('liked', data.likedByUser);
+    likeCount.textContent = photo.likes || 0;
+
+  }
+
+  // 渲染评论列表
+  function renderComments(comments) {
+    const container = document.getElementById('commentsContainer');
+    if (comments && comments.length > 0) {
+      let html = '';
+      comments.forEach(c => {
+        html += `
+          <div class="comment">
+            <div class="comment-text">${c.commentText}</div>
+            <div class="comment-time">${formatDateTime(c.createdAt)}</div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    } else {
+      container.innerHTML = '<div class="no-comments">暂无评论</div>';
+    }
+  }
+
+  // ======================
+  // 主加载逻辑
+  // ======================
+
+  // ✅ 将主要逻辑封装到一个函数中
+  function init() {
+    const photoId = getQueryParam('photoId');
+
+    if (!photoId) {
+      document.getElementById('error').textContent = '未指定照片 ID';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+      return; // ✅ 现在 return 在函数内部，没有问题
+    }
+
+    // 隐藏加载提示，显示内容区域（初始隐藏）
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('photoDetail').style.display = 'none';
+    document.getElementById('error').style.display = 'none';
+
+    // 调用后端接口获取照片详情
+    fetch(`/photos/${photoId}`)
+            .then(response => {
+              if (!response.ok) throw new Error('照片加载失败');
+              return response.json();
+            })
+            .then(data => {
+              document.getElementById('loading').style.display = 'none';
+              document.getElementById('photoDetail').style.display = 'block';
+
+              // 渲染照片和评论
+              renderPhoto(data);
+              renderComments(data.comments);
+            })
+            .catch(error => {
+              console.error('加载失败:', error);
+              document.getElementById('loading').style.display = 'none';
+              document.getElementById('error').style.display = 'block';
+              document.getElementById('error').textContent = '加载照片详情失败，请重试';
+            });
+  }
+
+  // ✅ 页面加载完成后执行 init()
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
