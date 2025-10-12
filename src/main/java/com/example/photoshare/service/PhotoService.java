@@ -107,6 +107,17 @@ public class PhotoService {
         return false;
     }
 
+    public boolean cancelLikePhoto(String photoId, String ipAddress) {
+        Optional<Photo> photoOptional = photoRepository.findById(photoId);
+        if (photoOptional.isPresent()) {
+            Photo photo = photoOptional.get();
+            photo.removeLike(ipAddress);
+            photoRepository.save(photo);
+            return true;
+        }
+        return false;
+    }
+
     public boolean isPhotoLikedByIp(String photoId, String ipAddress) {
         Optional<Photo> photoOptional = photoRepository.findById(photoId);
         if (photoOptional.isPresent()) {
@@ -135,5 +146,20 @@ public class PhotoService {
                     );
                 })
                 .collect(Collectors.toList());
+    }
+
+    public boolean toggleLike(String photoId, String likerDeviceId) {
+        Optional<Photo> photoOptional = photoRepository.findById(photoId);
+        if (! photoOptional.isPresent()) {
+            return false;
+        }
+        Photo photo = photoOptional.get();
+        List<String> likedBy = photo.getLikedBy();
+        if (likedBy.contains(likerDeviceId)) {
+            System.out.println("已经点赞，走取消");
+            return this.cancelLikePhoto(photoId, likerDeviceId);
+        } else {
+            return this.likePhoto(photoId, likerDeviceId);
+        }
     }
 }

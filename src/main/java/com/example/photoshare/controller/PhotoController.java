@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class PhotoController {
@@ -75,21 +77,37 @@ public class PhotoController {
         }
     }
 
-
-    @PostMapping("/like/cancel/{photoId}")
+    @PostMapping("/like/{photoId}")
     @ResponseBody
     public ResponseEntity<?> likePhoto(@PathVariable String photoId, @RequestBody LikeRequest likeRequest, HttpServletRequest request) {
 
         String ipAddress = getClientIp(request);
         String likerDeviceId = likeRequest.getLikerDeviceId();
         System.out.println("likePhoto=" + ipAddress + " likerDeviceId=" + likerDeviceId);
-        boolean success = photoService.likePhoto(photoId, likerDeviceId);
+//        boolean success = photoService.likePhoto(photoId, likerDeviceId);
+//
+//        if (success) {
+//            return ResponseEntity.ok("{\"success\": true, \"message\": \"点赞成功！\"}");
+//        } else {
+//            return ResponseEntity.badRequest().body("{\"error\": \"点赞失败\"}");
+//        }
 
-        if (success) {
-            return ResponseEntity.ok("{\"success\": true, \"message\": \"点赞成功！\"}");
+        // ✅ 调用 service 方法，执行【点赞/取消点赞 toggle】逻辑，并返回当前是否已点赞
+        boolean isNowLiked = photoService.toggleLike(photoId, likerDeviceId);
+
+        // 构造返回信息
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("isLiked", isNowLiked);
+
+        // 可选：根据状态设置不同提示信息
+        if (isNowLiked) {
+            result.put("message", "点赞成功！");
         } else {
-            return ResponseEntity.badRequest().body("{\"error\": \"点赞失败\"}");
+            result.put("message", "取消点赞成功");
         }
+
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/static/photos/{photoId}")

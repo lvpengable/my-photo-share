@@ -62,8 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 点赞照片
     window.likePhoto = function(photoId, button) {
-        const ipAddress = 'client-ip'; // 在实际应用中，应该从后端获取或传递
-
         fetch(`/like/${photoId}`, {
             method: 'POST',
             headers: {
@@ -72,21 +70,27 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({
                 likerDeviceId: currentDeviceId,
             })
-
         })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    button.classList.add('liked');
-                    button.innerHTML = '<span>❤️</span><span>已点赞</span>';
-                    // 重新加载照片以更新点赞数
-                    loadPhotosViaAjax();
+                    const isLiked = data.isLiked; // ✅ 后端返回当前是否已点赞
+                    if (isLiked) {
+                        button.classList.add('liked');
+                        button.innerHTML = '<span>❤️</span><span>已点赞</span>';
+                    } else {
+                        button.classList.remove('liked');
+                        button.innerHTML = '<span>❤️</span><span>点赞</span>';
+                    }
+                    // 可选：更新点赞数显示
+                    // document.getElementById('likeCount').textContent = data.likesCount || 0;
+                    loadPhotosViaAjax(); // 重新加载以更新全局状态
                 } else {
-                    alert('点赞失败，请重试');
+                    alert(data.message || '点赞失败，请重试');
                 }
             })
             .catch(error => {
-                console.error('Error liking photo:', error);
+                console.error('点赞出错:', error);
                 alert('点赞失败，请重试');
             });
     }
