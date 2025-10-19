@@ -1,25 +1,29 @@
 package com.example.photoshare.service;
 
+import com.example.photoshare.constant.ExceptionMsg;
 import com.example.photoshare.constant.PhotoCompressConstant;
 import com.example.photoshare.domain.Photo;
 import com.example.photoshare.domain.PhotoComment;
+import com.example.photoshare.domain.PhotoLikers;
 import com.example.photoshare.dto.CommentDto;
 import com.example.photoshare.repository.PhotoCommentRepository;
+import com.example.photoshare.repository.PhotoLikersRepository;
 import com.example.photoshare.repository.PhotoRepository;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +37,9 @@ public class PhotoService {
 
     @Autowired
     private PhotoCommentRepository photoCommentRepository;
+
+    @Autowired
+    private PhotoLikersRepository photoLikersRepository;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
@@ -96,24 +103,40 @@ public class PhotoService {
         return photoRepository.save(photo);
     }
 
+    @Transactional
     public boolean likePhoto(String photoId, String ipAddress) {
         Optional<Photo> photoOptional = photoRepository.findById(photoId);
         if (photoOptional.isPresent()) {
             Photo photo = photoOptional.get();
-            photo.addLike(ipAddress);
-            photoRepository.save(photo);
-            return true;
+            PhotoLikers byLikerDeviceIdAndPhotoId = photoLikersRepository.findByLikerDeviceIdAndPhotoId(ipAddress, photoId);
+            if (byLikerDeviceIdAndPhotoId == null) {
+                PhotoLikers photoLikers = new PhotoLikers();
+                photoLikers.setPhotoId(photoId);
+                photoLikers.setLikedAt(LocalDateTime.now());
+                photoLikers.setLikerDeviceId(ipAddress);
+                photoLikersRepository.save(photoLikers);
+                int likes = photo.getLikes();
+                photo.setLikes(likes+1);
+                photoRepository.save(photo);
+                return true;
+            }
         }
         return false;
     }
 
+    @Transactional
     public boolean cancelLikePhoto(String photoId, String ipAddress) {
         Optional<Photo> photoOptional = photoRepository.findById(photoId);
         if (photoOptional.isPresent()) {
             Photo photo = photoOptional.get();
-            photo.removeLike(ipAddress);
-            photoRepository.save(photo);
-            return true;
+            PhotoLikers byLikerDeviceIdAndPhotoId = photoLikersRepository.findByLikerDeviceIdAndPhotoId(ipAddress, photoId);
+            if (byLikerDeviceIdAndPhotoId != null) {
+                photoLikersRepository.deleteByLikerDeviceIdAndPhotoId(ipAddress, photoId);
+                int likes = photo.getLikes();
+                photo.setLikes(likes == 0 ? 0 : likes-1);
+                photoRepository.save(photo);
+                return true;
+            }
         }
         return false;
     }
@@ -121,7 +144,9 @@ public class PhotoService {
     public boolean isPhotoLikedByIp(String photoId, String ipAddress) {
         Optional<Photo> photoOptional = photoRepository.findById(photoId);
         if (photoOptional.isPresent()) {
-            return photoOptional.get().getLikedBy().contains(ipAddress);
+            Photo photo = photoOptional.get();
+            PhotoLikers byLikerDeviceIdAndPhotoId = photoLikersRepository.findByLikerDeviceIdAndPhotoId(ipAddress, photoId);
+            return byLikerDeviceIdAndPhotoId != null;
         }
         return false;
     }
@@ -154,11 +179,19 @@ public class PhotoService {
             return false;
         }
         Photo photo = photoOptional.get();
-        List<String> likedBy = photo.getLikedBy();
+        List<PhotoLikers> photoLikers = photoLikersRepository.findByPhotoId(photoId);
+        List<String> likedBy = photoLikers == null ? new ArrayList<>() : photoLikers.stream().map(PhotoLikers::getLikerDeviceId).collect(Collectors.toList());
+
         if (likedBy.contains(likerDeviceId)) {
             System.out.println("已经点赞，走取消");
             return this.cancelLikePhoto(photoId, likerDeviceId);
         } else {
+            long likeCount = photoLikersRepository.countByLikerDeviceId(likerDeviceId);
+            System.out.println("用户点赞过的照片总数: " + likeCount);
+            if (likeCount >= 3) {
+                throw new RuntimeException(ExceptionMsg.MAX_LIKE_COUNT_MSG);
+            }
+
             return this.likePhoto(photoId, likerDeviceId);
         }
     }

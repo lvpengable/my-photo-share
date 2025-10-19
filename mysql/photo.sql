@@ -12,11 +12,13 @@ create table photo_share.photo
 
 create table photo_share.photo_likers
 (
+    id            varchar(36)   not null
+        primary key,
     photo_id varchar(36) not null,
     liker_device_id VARCHAR(255) NOT NULL,
     liker_ip varchar(45)  null,
     liked_at   datetime      null,
-    primary key (photo_id, liker_device_id),
+    unique key (photo_id, liker_device_id),
     constraint photo_likers_ibfk_1
         foreign key (photo_id) references photo_share.photo (id)
             on delete cascade

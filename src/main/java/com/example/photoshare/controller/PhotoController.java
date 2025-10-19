@@ -1,5 +1,6 @@
 package com.example.photoshare.controller;
 
+import com.example.photoshare.constant.ExceptionMsg;
 import com.example.photoshare.constant.PhotoCompressConstant;
 import com.example.photoshare.domain.Photo;
 import com.example.photoshare.dto.CommentDto;
@@ -93,7 +94,18 @@ public class PhotoController {
 //        }
 
         // ✅ 调用 service 方法，执行【点赞/取消点赞 toggle】逻辑，并返回当前是否已点赞
-        boolean isNowLiked = photoService.toggleLike(photoId, likerDeviceId);
+        boolean isNowLiked = false;
+        try {
+           isNowLiked = photoService.toggleLike(photoId, likerDeviceId);
+        } catch (RuntimeException e) {
+            if (e.getMessage().equalsIgnoreCase(ExceptionMsg.MAX_LIKE_COUNT_MSG)) {
+                // 构造返回信息
+                Map<String, Object> result = new HashMap<>();
+                result.put("success", false);
+                result.put("message", ExceptionMsg.MAX_LIKE_COUNT_MSG);
+                return ResponseEntity.ok(result);
+            }
+        }
 
         // 构造返回信息
         Map<String, Object> result = new HashMap<>();

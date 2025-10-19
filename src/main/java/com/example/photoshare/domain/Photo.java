@@ -29,11 +29,6 @@ public class Photo {
         this.likedByUser = likedByUser;
     }
     
-    @ElementCollection
-    @CollectionTable(name = "photo_likers", joinColumns = @JoinColumn(name = "photo_id"))
-    @Column(name = "liker_device_id")
-    private List<String> likedBy = new ArrayList<>();
-    
     @PrePersist
     public void prePersist() {
         if (this.id == null) {
@@ -73,20 +68,5 @@ public class Photo {
     public int getLikes() { return likes; }
     public void setLikes(int likes) { this.likes = likes; }
 
-    public List<String> getLikedBy() { return likedBy; }
-    public void setLikedBy(List<String> likedBy) { this.likedBy = likedBy; }
 
-    public void addLike(String ip) {
-        if (!likedBy.contains(ip)) {
-            likedBy.add(ip);
-            likes++;
-        }
-    }
-
-    public void removeLike(String ip) {
-        if (likedBy.contains(ip)) {
-            likedBy.remove(ip);
-            likes--;
-        }
-    }
 }
